@@ -99,9 +99,35 @@ public class MasterService {
     }
 
     @Data
+    public static class BatchCardsDTO {
+        private String batchId;
+        private String batchName;
+        private LocalTime startTime;
+        private LocalTime endTime;
+    }
+
+    public List<BatchCardsDTO> getBatchesByCourse(String course){
+        Optional<Batch> batch = batchRepo.findById(course);
+        return batchRepo.findByCourse(course)
+                .stream()
+                .map(this::getBatchCardsToEntity)
+                .collect(Collectors.toList());
+    }
+
+    public BatchCardsDTO getBatchCardsToEntity(Batch batch){
+        BatchCardsDTO batchCardsDTO = new BatchCardsDTO();
+        batchCardsDTO.setBatchId(batch.getBatchId());
+        batchCardsDTO.setBatchName(batchCardsDTO.getBatchName());
+        batchCardsDTO.setStartTime(batch.getStartTime());
+        batchCardsDTO.setEndTime(batch.getEndTime());
+        return batchCardsDTO;
+    }
+
+
+    @Data
     @AllArgsConstructor
     public static class BatchFormDTO {
-        private int batchId;
+        private String batchId;
         private String batchName;
         private LocalDate startDate;
         private LocalDate endDate;
@@ -118,7 +144,7 @@ public class MasterService {
         private UserRegistrationDTO instructorName;
         private BatchFormDTO batchFormDTO;
     }
-
+/*
     public List<BuildBatchDTO> getBatchesByCourseId(String courseId) {
         Optional<Course> course = courseRepo.findById(courseId);
         return batchRepo.findByCourse(course)
@@ -143,8 +169,7 @@ public class MasterService {
 
     private BuildBatchDTO convertBatchToDto(Batch batch) {
         BuildBatchDTO buildBatchDTO = new BuildBatchDTO();
-        buildBatchDTO.setCourse(batch.getCourse());
-        buildBatchDTO.setInstructorName(batch.getInstructor().getFullName());
+
         buildBatchDTO.setBatchFormDTO(new BatchFormDTO(
                 batch.getBatchId(),
                 batch.getBatchName(),
@@ -156,6 +181,16 @@ public class MasterService {
                 batch.getLocation(),
                 batch.getLocationAddress()
         ));
+
+        List<Course> course = batch.getCourse().stream()
+                .map(Course::getName)
+                .collect(Collectors.toList());
+        buildBatchDTO.setCourse(course);
+
+        List<UserRegistration> instructorName = batch.getInstructor().stream()
+                .map(UserRegistration::getFullName)
+                .collect(Collectors.toList());
+        buildBatchDTO.setInstructorName(instructorName);
         return buildBatchDTO;
-    }
+    }*/
 }

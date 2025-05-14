@@ -31,9 +31,8 @@ public class MasterController {
         return masterService.addUser(userRegistrationDTO);
     }
 
-    @PostMapping("/buildBatch")
-    public MasterService.BuildBatchDTO buildBatchForm(@RequestBody MasterService.UserRegistrationDTO userRegistrationDTO) {
-        return masterService.buildBatchForm(userRegistrationDTO);
+    @GetMapping("/batches/{course}")
+    public List<MasterService.BatchCardsDTO> getBatchesByCourse(@PathVariable String course){
+        return masterService.getBatchesByCourse(course);
     }
-
 }

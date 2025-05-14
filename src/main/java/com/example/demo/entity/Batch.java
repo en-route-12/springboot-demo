@@ -1,6 +1,5 @@
 package com.example.demo.entity;
 
-import com.example.demo.service.MasterService;
 import jakarta.persistence.*;
 import lombok.Data;
 
