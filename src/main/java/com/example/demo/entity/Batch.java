@@ -12,21 +12,23 @@ import java.util.List;
 @Table(name = "batch")
 public class Batch {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int batchId;
+    private String batchName;
+    private LocalDate startDate;
+    private LocalDate endDate;
+    @ElementCollection
+    @CollectionTable(name = "batch_days", joinColumns = @JoinColumn(name = "batch_id"))
+    @Column(name = "days")
+    private List<String> days;
+    private LocalTime startTime;
+    private LocalTime endTime;
+    private String location;
+    private String locationAddress;
     @ManyToOne
     @JoinColumn(name = "courseName", referencedColumnName = "name")
     private Course course;
 
     @ManyToOne
     @JoinColumn(name = "instructor", referencedColumnName = "userId")
-    private UserRegistration instructor;
-    private String batchName;
-    private LocalDate startDate;
-    private LocalDate endDate;
-    private List<String> days;
-    private LocalTime startTime;
-    private LocalTime endTime;
-    private String location;
-    private String locationAddress;
+    private UserRegistration user;
 }

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -100,14 +101,14 @@ public class MasterService {
 
     @Data
     public static class BatchCardsDTO {
-        private String batchId;
+        private int batchId;
         private String batchName;
         private LocalTime startTime;
         private LocalTime endTime;
     }
 
-    public List<BatchCardsDTO> getBatchesByCourse(String course){
-        Optional<Batch> batch = batchRepo.findById(course);
+    public List<BatchCardsDTO> getBatchesByCourse(String courseName) {
+        Course course = courseRepo.findByName(courseName);
         return batchRepo.findByCourse(course)
                 .stream()
                 .map(this::getBatchCardsToEntity)
@@ -117,17 +118,16 @@ public class MasterService {
     public BatchCardsDTO getBatchCardsToEntity(Batch batch){
         BatchCardsDTO batchCardsDTO = new BatchCardsDTO();
         batchCardsDTO.setBatchId(batch.getBatchId());
-        batchCardsDTO.setBatchName(batchCardsDTO.getBatchName());
+        batchCardsDTO.setBatchName(batch.getBatchName());
         batchCardsDTO.setStartTime(batch.getStartTime());
         batchCardsDTO.setEndTime(batch.getEndTime());
         return batchCardsDTO;
     }
 
-
     @Data
     @AllArgsConstructor
     public static class BatchFormDTO {
-        private String batchId;
+        private int batchId;
         private String batchName;
         private LocalDate startDate;
         private LocalDate endDate;
@@ -136,26 +136,45 @@ public class MasterService {
         private LocalTime endTime;
         private String location;
         private String locationAddress;
+        private String courseName;
+        private int instructorId;
     }
 
     @Data
     public static class BuildBatchDTO {
-        private CourseDTO course;
-        private UserRegistrationDTO instructorName;
+        private List<String> courses;
+        private List<String> instructorNames;
         private BatchFormDTO batchFormDTO;
-    }
-/*
-    public List<BuildBatchDTO> getBatchesByCourseId(String courseId) {
-        Optional<Course> course = courseRepo.findById(courseId);
-        return batchRepo.findByCourse(course)
-                .stream()
-                .map(this::convertBatchToDto)
-                .collect(Collectors.toList());
+
+        public BuildBatchDTO(List<String> courses, List<String> instructorNames, BatchFormDTO batchFormDTO) {
+            this.courses = courses;
+            this.instructorNames = instructorNames;
+            this.batchFormDTO = batchFormDTO;
+        }
     }
 
-    public void saveBatch(BatchFormDTO batchFormDTO) {
+    public BuildBatchDTO getAvailableCoursesAndInstructors() {
+        List<String> courses = courseRepo.findAll()
+                .stream()
+                .map(Course::getName)
+                .collect(Collectors.toList());
+
+        List<String> instructors = userRepo.findAll()
+                .stream()
+                .map(UserRegistration::getFullName)
+                .collect(Collectors.toList());
+
+        return new BuildBatchDTO(courses, instructors, null);
+    }
+
+    public Batch saveBatch(int batchId, BatchFormDTO batchFormDTO) {
+        Batch batch = convertDtoToEntity(batchId, batchFormDTO);
+        return batchRepo.save(batch);
+    }
+
+    private Batch convertDtoToEntity(int batchId, BatchFormDTO batchFormDTO){
         Batch batch = new Batch();
-        batch.setBatchId(batchFormDTO.getBatchId());
+        batch.setBatchId(batchId);
         batch.setBatchName(batchFormDTO.getBatchName());
         batch.setStartDate(batchFormDTO.getStartDate());
         batch.setEndDate(batchFormDTO.getEndDate());
@@ -164,13 +183,20 @@ public class MasterService {
         batch.setEndTime(batchFormDTO.getEndTime());
         batch.setLocation(batchFormDTO.getLocation());
         batch.setLocationAddress(batchFormDTO.getLocationAddress());
-        batchRepo.save(batch);
+        Course course = courseRepo.findByName(batchFormDTO.getCourseName());
+        UserRegistration instructor = userRepo.findById(batchFormDTO.getInstructorId()).orElse(null);
+
+        batch.setCourse(course);
+        batch.setUser(instructor);
+
+        return batch;
     }
-
+/*
     private BuildBatchDTO convertBatchToDto(Batch batch) {
-        BuildBatchDTO buildBatchDTO = new BuildBatchDTO();
-
-        buildBatchDTO.setBatchFormDTO(new BatchFormDTO(
+        return new BuildBatchDTO(
+                Collections.singletonList(batch.getCourse().getName()),
+                Collections.singletonList(batch.getUser().getFullName()),
+            new BatchFormDTO(
                 batch.getBatchId(),
                 batch.getBatchName(),
                 batch.getStartDate(),
@@ -179,18 +205,10 @@ public class MasterService {
                 batch.getStartTime(),
                 batch.getEndTime(),
                 batch.getLocation(),
-                batch.getLocationAddress()
-        ));
-
-        List<Course> course = batch.getCourse().stream()
-                .map(Course::getName)
-                .collect(Collectors.toList());
-        buildBatchDTO.setCourse(course);
-
-        List<UserRegistration> instructorName = batch.getInstructor().stream()
-                .map(UserRegistration::getFullName)
-                .collect(Collectors.toList());
-        buildBatchDTO.setInstructorName(instructorName);
-        return buildBatchDTO;
+                batch.getLocationAddress(),
+                batch.getCourse().getName(),
+                batch.getUser().getUserId()
+            )
+        );
     }*/
 }

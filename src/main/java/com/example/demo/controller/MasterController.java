@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.entity.Batch;
 import com.example.demo.entity.UserRegistration;
 import com.example.demo.service.MasterService;
 import org.springframework.web.bind.annotation.*;
@@ -34,5 +35,15 @@ public class MasterController {
     @GetMapping("/batches/{course}")
     public List<MasterService.BatchCardsDTO> getBatchesByCourse(@PathVariable String course){
         return masterService.getBatchesByCourse(course);
+    }
+
+    @GetMapping("/form")
+    public MasterService.BuildBatchDTO getAvailableCoursesAndInstructors() {
+        return masterService.getAvailableCoursesAndInstructors();
+    }
+
+    @PostMapping("/save/{batchId}")
+    public Batch saveBatch(@PathVariable int batchId, @RequestBody MasterService.BatchFormDTO batchFormDTO) {
+        return masterService.saveBatch(batchId, batchFormDTO);
     }
 }
