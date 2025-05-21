@@ -42,8 +42,18 @@ public class MasterController {
         return masterService.getAvailableCoursesAndInstructors();
     }
 
-    @PostMapping("/save/{batchId}")
-    public Batch saveBatch(@PathVariable int batchId, @RequestBody MasterService.BatchFormDTO batchFormDTO) {
-        return masterService.saveBatch(batchId, batchFormDTO);
+    @PostMapping("/save")
+    public Batch saveBatch(@RequestBody MasterService.BatchFormDTO batchFormDTO) {
+        return masterService.saveBatch(batchFormDTO);
+    }
+
+    @GetMapping("batch/{batchId}")
+    public MasterService.BatchInfoDTO getBatchInfoByBatchId(@PathVariable int batchId){
+        return masterService.getBatchInfoByBatchId(batchId);
+    }
+
+    @GetMapping("/students/{batchId}")
+    public List<MasterService.StudentPaymentDetailDTO> getStudentDetails(@PathVariable int batchId){
+        return masterService.getStudentDetails(batchId);
     }
 }

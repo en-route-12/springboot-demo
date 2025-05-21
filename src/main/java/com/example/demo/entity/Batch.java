@@ -24,6 +24,8 @@ public class Batch {
     private LocalTime endTime;
     private String location;
     private String locationAddress;
+    private int batchLimit;
+    private int currentStudents;
     @ManyToOne
     @JoinColumn(name = "courseName", referencedColumnName = "name")
     private Course course;

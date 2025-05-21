@@ -1,10 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.*;
-import com.example.demo.repository.BatchRepository;
-import com.example.demo.repository.CourseRepository;
-import com.example.demo.repository.LoginRepository;
-import com.example.demo.repository.UserRegistrationRepository;
+import com.example.demo.repository.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.stereotype.Service;
@@ -12,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.net.URL;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -24,12 +22,14 @@ public class MasterService {
     private final CourseRepository courseRepo;
     private final UserRegistrationRepository userRepo;
     private final BatchRepository batchRepo;
+    private final StudentRepository studentRepo;
 
-    public MasterService(LoginRepository loginRepo, CourseRepository courseRepo, UserRegistrationRepository userRepo, BatchRepository batchRepo) {
+    public MasterService(LoginRepository loginRepo, CourseRepository courseRepo, UserRegistrationRepository userRepo, BatchRepository batchRepo, StudentRepository studentRepo) {
         this.loginRepo = loginRepo;
         this.courseRepo = courseRepo;
         this.userRepo = userRepo;
         this.batchRepo = batchRepo;
+        this.studentRepo = studentRepo;
     }
 
     @Data
@@ -167,14 +167,15 @@ public class MasterService {
         return new BuildBatchDTO(courses, instructors, null);
     }
 
-    public Batch saveBatch(int batchId, BatchFormDTO batchFormDTO) {
-        Batch batch = convertDtoToEntity(batchId, batchFormDTO);
+    public Batch saveBatch(BatchFormDTO batchFormDTO) {
+        Batch batch = convertDtoToEntity(batchFormDTO);
         return batchRepo.save(batch);
     }
 
-    private Batch convertDtoToEntity(int batchId, BatchFormDTO batchFormDTO){
+    private Batch convertDtoToEntity(BatchFormDTO batchFormDTO){
         Batch batch = new Batch();
-        batch.setBatchId(batchId);
+        System.out.println("Batch ID before saving: " + batchFormDTO.getBatchId());
+        batch.setBatchId(batchFormDTO.getBatchId());
         batch.setBatchName(batchFormDTO.getBatchName());
         batch.setStartDate(batchFormDTO.getStartDate());
         batch.setEndDate(batchFormDTO.getEndDate());
@@ -211,4 +212,114 @@ public class MasterService {
             )
         );
     }*/
+
+    @Data
+    public static class BatchInfoDTO {
+        private String course;
+        private String batchName;
+        private String timeslot;
+        private int batchLimit;
+        private int currentStudents;
+        private String instructorName;
+        private String venue;
+        private String description;
+    }
+
+    public BatchInfoDTO getBatchInfoByBatchId(int batchId) {
+        Optional<Batch> batch = batchRepo.findById(batchId);
+
+        return batch.map(this::convertBatchEntityToBatchInfoDto).orElse(null);
+    }
+
+    private BatchInfoDTO convertBatchEntityToBatchInfoDto(Batch batch) {
+        BatchInfoDTO batchInfoDTO = new BatchInfoDTO();
+        batchInfoDTO.setBatchName(batch.getBatchName());
+        batchInfoDTO.setTimeslot(batch.getStartTime() + " - " + batch.getEndTime());
+        batchInfoDTO.setBatchLimit(batch.getBatchLimit());
+        batchInfoDTO.setCurrentStudents(batch.getCurrentStudents());
+        batchInfoDTO.setInstructorName(batch.getUser().getFullName());
+        batchInfoDTO.setVenue(batch.getLocation());
+        batchInfoDTO.setDescription(batch.getLocationAddress());
+        batchInfoDTO.setCourse(batch.getCourse().getName());
+
+        return batchInfoDTO;
+    }
+
+    @Data
+    public static class StudentPaymentDetailDTO {
+        private int batchId;
+        private String className;
+        private String batchName;
+        private String timeslot;
+        private List<StudentPaymentListDTO>  studentDetails;
+    }
+
+    @Data
+    public static class StudentPaymentListDTO {
+        private int id;
+        private String profileImg;
+        private String studentName;
+        private List<String> button;
+    }
+
+    public List<StudentPaymentDetailDTO> getStudentDetails(int batchId) {
+        List<Student> students = studentRepo.findByBatch(batchRepo.findById(batchId).orElse(null));
+
+        return students.stream()
+                .collect(Collectors.groupingBy(student -> student.getBatch().getBatchId()))
+                .values()
+                .stream()
+                .map(studentList -> {
+                    Batch batch = studentList.getFirst().getBatch();
+
+                    StudentPaymentDetailDTO batchDTO = new StudentPaymentDetailDTO();
+                    batchDTO.setBatchId(batch.getBatchId());
+                    batchDTO.setClassName(batch.getCourse().getName());
+                    batchDTO.setBatchName(batch.getBatchName());
+                    batchDTO.setTimeslot(batch.getStartTime() + " - " + batch.getEndTime());
+
+                    List<StudentPaymentListDTO> studentDetails = studentList.stream().map(student -> {
+                        StudentPaymentListDTO studentDTO = new StudentPaymentListDTO();
+                        studentDTO.setId(student.getId());
+                        studentDTO.setStudentName(student.getStudentName());
+                        studentDTO.setProfileImg(student.getProfileImg());
+                        studentDTO.setButton(new ArrayList<>(student.getButton()));
+                        return studentDTO;
+                    }).collect(Collectors.toList());
+
+                    batchDTO.setStudentDetails(studentDetails);
+                    return batchDTO;
+                })
+                .collect(Collectors.toList());
+    }
+
+/*
+    public List<StudentPaymentDetailDTO> getStudentDetails(int batchId){
+        Batch batch = batchRepo.findById(batchId).orElse(null);
+            return studentRepo.findByBatch(batch)
+                    .stream()
+                    .map(this::convertStudentEntityToDto)
+                    .collect(Collectors.toList());
+    }
+
+    public StudentPaymentDetailDTO convertStudentEntityToDto(Student student){
+        StudentPaymentDetailDTO studentPaymentDetailDTO = new StudentPaymentDetailDTO();
+        StudentPaymentListDTO studentPaymentListDTO = new StudentPaymentListDTO();
+
+        studentPaymentListDTO.setId(student.getId());
+        studentPaymentListDTO.setStudentName(student.getStudentName());
+        studentPaymentListDTO.setProfileImg(student.getProfileImg());
+        studentPaymentListDTO.setButton(student.getButton());
+
+        List<StudentPaymentListDTO> studentDetails = Collections.singletonList(studentPaymentListDTO);
+
+        studentPaymentDetailDTO.setBatchId(student.getBatch().getBatchId());
+        studentPaymentDetailDTO.setClassName(student.getCourseName());
+        studentPaymentDetailDTO.setBatchName(student.getBatchName());
+        studentPaymentDetailDTO.setTimeslot(student.getTimeslot());
+        studentPaymentDetailDTO.setStudentDetails(studentDetails);
+
+        return studentPaymentDetailDTO;
+    }
+*/
 }
